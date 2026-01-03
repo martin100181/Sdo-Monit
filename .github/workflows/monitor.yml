@@ -28,3 +28,12 @@ jobs:
           SALDO_URL: "https://saldo.com.ar/a/usdt/palpal/0/100"
         run: |
           python monitor.py
+
+      - name: Upload debug artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug
+          path: |
+            debug_page.png
+            debug_page.html
