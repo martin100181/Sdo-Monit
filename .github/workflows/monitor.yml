@@ -108,6 +108,74 @@ PY
 
       - name: Commit updated last_value.txt
         run: |
+        env:
+          SALDO_URL: ${{ env.SALDO_URL }}
+        run: |
+          OUT="$(python monitor.py)"
+          echo "$OUT"
+
+          VAL="$(echo "$OUT" | sed -n 's/^ENVIAS_USDT=//p' | tail -n 1)"
+          echo "VAL=$VAL"
+
+          if [ -z "$VAL" ]; then
+            echo "No pude extraer ENVIAS_USDT del output."
+            exit 1
+          fi
+
+          echo "value=$VAL" >> "$GITHUB_OUTPUT"
+
+      - name: Compare with last value and alert (Telegram)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          THRESHOLD: ${{ env.THRESHOLD }}
+        run: |
+          CUR="${{ steps.monitor.outputs.value }}"
+
+          if [ -f last_value.txt ]; then
+            PREV="$(cat last_value.txt | tr -d ' \n\r')"
+          else
+            PREV=""
+          fi
+
+          TS="$(TZ=America/Argentina/Buenos_Aires date '+%Y-%m-%d %H:%M:%S')"
+
+          echo "PREV=$PREV"
+          echo "CUR=$CUR"
+          echo "TS=$TS"
+
+          # Primera ejecución: inicializa y avisa
+          if [ -z "$PREV" ]; then
+            echo "$CUR" > last_value.txt
+            MSG="✅ Monitor iniciado ($TS). ENVIAS_USDT=$CUR"
+            curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -d "chat_id=${TELEGRAM_CHAT_ID}" \
+              -d "text=${MSG}" >/dev/null
+            exit 0
+          fi
+
+          # Export para que python -c lea desde env
+          export PREV CUR
+
+          DIFF="$(python -c "import os; prev=float(os.environ['PREV']); cur=float(os.environ['CUR']); print(abs(cur-prev))")"
+          echo "DIFF=$DIFF"
+
+          export DIFF THRESHOLD
+          SHOULD="$(python -c "import os; diff=float(os.environ['DIFF']); thr=float(os.environ['THRESHOLD']); print('yes' if diff >= thr else 'no')")"
+          echo "SHOULD=$SHOULD"
+
+          if [ "$SHOULD" = "yes" ]; then
+            MSG="🚨 Cambio ENVIAS_USDT ($TS): $PREV → $CUR (Δ=$DIFF)"
+            curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -d "chat_id=${TELEGRAM_CHAT_ID}" \
+              -d "text=${MSG}" >/dev/null
+          fi
+
+          # Guardar el valor actual siempre
+          echo "$CUR" > last_value.txt
+
+      - name: Commit updated last_value.txt
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add last_value.txt
