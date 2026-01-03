@@ -1,13 +1,20 @@
-name: saldo-envias-usdt
+name: saldo-envias-usdt-telegram
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   run:
     runs-on: ubuntu-latest
+    env:
+      SALDO_URL: "https://saldo.com.ar/a/usdt/palpal/0/100"
+      THRESHOLD: "0.10"   # alerta si cambia >= 0.10 USDT (ajustalo)
+
     steps:
       - uses: actions/checkout@v4
 
@@ -23,11 +30,92 @@ jobs:
         run: |
           python -m playwright install --with-deps chromium
 
-      - name: Run monitor
+      - name: Run monitor and extract value
+        id: monitor
         env:
-          SALDO_URL: "https://saldo.com.ar/a/usdt/palpal/0/100"
+          SALDO_URL: ${{ env.SALDO_URL }}
         run: |
-          python monitor.py
+          OUT="$(python monitor.py)"
+          echo "$OUT"
+
+          VAL="$(echo "$OUT" | sed -n 's/^ENVIAS_USDT=//p' | tail -n 1)"
+          echo "VAL=$VAL"
+
+          if [ -z "$VAL" ]; then
+            echo "No pude extraer ENVIAS_USDT del output."
+            exit 1
+          fi
+
+          echo "value=$VAL" >> "$GITHUB_OUTPUT"
+
+      - name: Compare with last value and alert (Telegram)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          THRESHOLD: ${{ env.THRESHOLD }}
+        run: |
+          CUR="${{ steps.monitor.outputs.value }}"
+
+          if [ -f last_value.txt ]; then
+            PREV="$(cat last_value.txt | tr -d ' \n\r')"
+          else
+            PREV=""
+          fi
+
+          TS="$(TZ=America/Argentina/Buenos_Aires date '+%Y-%m-%d %H:%M:%S')"
+
+          echo "PREV=$PREV"
+          echo "CUR=$CUR"
+          echo "TS=$TS"
+
+          # Primera ejecución: inicializa y avisa
+          if [ -z "$PREV" ]; then
+            echo "$CUR" > last_value.txt
+            MSG="✅ Monitor iniciado ($TS). ENVIAS_USDT=$CUR"
+            curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -d "chat_id=${TELEGRAM_CHAT_ID}" \
+              -d "text=${MSG}" >/dev/null
+            exit 0
+          fi
+
+          DIFF="$(python - << 'PY'
+import os
+prev=float(os.environ["PREV"])
+cur=float(os.environ["CUR"])
+print(abs(cur-prev))
+PY
+)"
+          echo "DIFF=$DIFF"
+
+          SHOULD="$(python - << 'PY'
+import os
+diff=float(os.environ["DIFF"])
+thr=float(os.environ["THRESHOLD"])
+print("yes" if diff >= thr else "no")
+PY
+)"
+          echo "SHOULD=$SHOULD"
+
+          if [ "$SHOULD" = "yes" ]; then
+            MSG="🚨 Cambio ENVIAS_USDT ($TS): $PREV → $CUR (Δ=$DIFF)"
+            curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -d "chat_id=${TELEGRAM_CHAT_ID}" \
+              -d "text=${MSG}" >/dev/null
+          fi
+
+          # Guardar el valor actual siempre
+          echo "$CUR" > last_value.txt
+
+      - name: Commit updated last_value.txt
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add last_value.txt
+
+          git diff --cached --quiet && exit 0
+
+          git commit -m "Update last_value.txt"
+          git push
 
       - name: Upload debug artifacts
         if: failure()
