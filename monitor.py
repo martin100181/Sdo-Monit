@@ -11,33 +11,39 @@ def parse_number(s: str) -> float:
         raise ValueError(f"No pude parsear número desde: {s!r}")
     return float(m.group(1).replace(",", "."))
 
+import re
+
 def read_envias_usdt(page) -> float:
-    page.goto(URL, wait_until="networkidle", timeout=60000)
-    page.wait_for_timeout(1500)
+    # Carga normal (sin tocar "Siguiente")
+    page.goto(URL, wait_until="domcontentloaded", timeout=120000)
+    page.wait_for_timeout(2500)
 
-    candidates = [
-        "xpath=//*[contains(normalize-space(.), 'Envías') and contains(normalize-space(.), 'USDT')]/following::input[1]",
-        "xpath=//label[contains(., 'Envías') and contains(., 'USDT')]/following::input[1]",
-        "xpath=//*[contains(normalize-space(.), 'Envías') and contains(normalize-space(.), 'USDT')]//input",
-    ]
+    # Encontrar el texto "Envías USDT" (con o sin tilde)
+    label = page.get_by_text(re.compile(r"Env[ií]as\s+USDT", re.I)).first
+    label.wait_for(timeout=30000)
 
-    last_err = None
-    for sel in candidates:
+    # Subimos en el DOM hasta encontrar un contenedor que también tenga "tether"
+    container = None
+    for i in range(1, 8):
+        anc = label.locator(f"xpath=ancestor::*[{i}]")
         try:
-            loc = page.locator(sel).first
-            loc.wait_for(state="visible", timeout=20000)
-            raw = loc.input_value()
-            if raw and raw.strip():
-                return parse_number(raw)
-        except Exception as e:
-            last_err = e
+            if anc.get_by_text(re.compile(r"tether", re.I)).count() > 0:
+                container = anc
+                break
+        except Exception:
+            pass
 
-    body = page.inner_text("body")
-    m = re.search(r"Envías.*?([0-9]+(?:[.,][0-9]+)?)\s*USDT", body, re.I | re.S)
-    if m:
-        return parse_number(m.group(1))
+    # Fallback: si no encontramos "tether", usamos un ancestro cercano
+    if container is None:
+        container = label.locator("xpath=ancestor::div[1]")
 
-    raise RuntimeError(f"No pude encontrar el valor de 'Envías USDT'. Último error: {last_err}")
+    # Extraemos texto del contenedor y sacamos el primer número (ej: 91.5)
+    text = container.inner_text()
+    m = re.search(r"([0-9]+(?:[.,][0-9]+)?)", text)
+    if not m:
+        raise RuntimeError(f"No encontré número dentro del bloque 'Envías USDT'. Texto visto: {text!r}")
+
+    return float(m.group(1).replace(",", "."))
 
 def main():
     with sync_playwright() as p:
