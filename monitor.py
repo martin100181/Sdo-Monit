@@ -13,35 +13,30 @@ def parse_first_number(text: str) -> float:
 
 def read_envias_usdt(page) -> float:
     page.goto(URL, wait_until="domcontentloaded", timeout=180000)
+    page.wait_for_timeout(2500)
 
-    # Espera a que exista algo característico del bloque superior (tether / USDT)
-    # Esto evita depender del texto exacto "Envías USDT"
-    page.wait_for_timeout(2000)
-    page.wait_for_function(
-        "document.body && (document.body.innerText.toLowerCase().includes('tether') || document.body.innerText.toLowerCase().includes('usdt'))",
-        timeout=120000,
-    )
-
-    # Buscamos "tether" (está en el bloque de Envías) y subimos en el DOM
+    # Espera a que aparezca tether (está en el bloque superior "You send/Envías")
     tether = page.get_by_text(re.compile(r"tether", re.I)).first
     tether.wait_for(timeout=120000)
 
+    # subimos hasta un contenedor que tenga USDT y (Envías o You send)
     container = None
-    # Elegimos el ancestro que contenga "Envías" (o "Envias") pero NO "Recibes"
     for i in range(1, 12):
         anc = tether.locator(f"xpath=ancestor::*[{i}]")
         t = anc.inner_text()
-        if re.search(r"Env[ií]as", t, re.I) and not re.search(r"Recibes", t, re.I):
+        if re.search(r"USDT", t, re.I) and re.search(r"(Env[ií]as|You send)", t, re.I):
             container = anc
             break
 
-    # Fallback: si por alguna razón no aparece "Envías", usamos un ancestro cercano
     if container is None:
         container = tether.locator("xpath=ancestor::div[1]")
 
     text = container.inner_text()
-    # En tu captura el primer número dentro de este bloque es el "91.5"
-    return parse_first_number(text)
+    m = re.search(r"([0-9]+(?:[.,][0-9]+)?)", text)
+    if not m:
+        raise RuntimeError(f"No encontré el número de USDT en el bloque. Texto: {text!r}")
+    return float(m.group(1).replace(",", "."))
+
 
 def main():
     with sync_playwright() as p:
@@ -51,12 +46,10 @@ def main():
         )
         context = browser.new_context(
             locale="es-AR",
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            ),
+            extra_http_headers={"Accept-Language": "es-AR,es;q=0.9,en;q=0.8"},
             viewport={"width": 1280, "height": 720},
         )
+
         page = context.new_page()
 
         try:
