@@ -2,7 +2,7 @@ name: saldo-envias-usdt
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -28,6 +28,25 @@ jobs:
           SALDO_URL: "https://saldo.com.ar/a/usdt/palpal/0/100"
         run: |
           python monitor.py
+
+       - name: Send value to Google Sheets (Apps Script)
+        env:
+          GS_WEBAPP_URL: ${{ secrets.GS_WEBAPP_URL }}
+          GS_TOKEN: ${{ secrets.GS_TOKEN }}
+        run: |
+          # Corre el monitor y extrae el número
+          OUT="$(python monitor.py)"
+          echo "$OUT"
+
+          VAL="$(echo "$OUT" | sed -n 's/^ENVIAS_USDT=//p' | tail -n 1)"
+          echo "VAL=$VAL"
+
+          # Post a Apps Script (token en querystring + JSON con value)
+          curl -sS -X POST "${GS_WEBAPP_URL}?token=${GS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"value\": ${VAL}}" \
+            | tee /dev/stderr
+
 
       - name: Upload debug artifacts
         if: failure()
