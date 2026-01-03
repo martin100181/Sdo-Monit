@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SALDO_URL: "https://saldo.com.ar/a/usdt/palpal/0/100"
-      THRESHOLD: "0.10"   # alerta si cambia >= 0.10 USDT (ajustalo)
+      THRESHOLD: "0.10"  # alerta si cambia >= 0.10 USDT
 
     steps:
       - uses: actions/checkout@v4
@@ -78,22 +78,14 @@ jobs:
             exit 0
           fi
 
-          DIFF="$(python - << 'PY'
-import os
-prev=float(os.environ["PREV"])
-cur=float(os.environ["CUR"])
-print(abs(cur-prev))
-PY
-)"
+          # Export para que python -c lea desde env
+          export PREV CUR
+
+          DIFF="$(python -c "import os; prev=float(os.environ['PREV']); cur=float(os.environ['CUR']); print(abs(cur-prev))")"
           echo "DIFF=$DIFF"
 
-          SHOULD="$(python - << 'PY'
-import os
-diff=float(os.environ["DIFF"])
-thr=float(os.environ["THRESHOLD"])
-print("yes" if diff >= thr else "no")
-PY
-)"
+          export DIFF THRESHOLD
+          SHOULD="$(python -c "import os; diff=float(os.environ['DIFF']); thr=float(os.environ['THRESHOLD']); print('yes' if diff >= thr else 'no')")"
           echo "SHOULD=$SHOULD"
 
           if [ "$SHOULD" = "yes" ]; then
