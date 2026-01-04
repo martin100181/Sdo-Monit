@@ -2,8 +2,12 @@ name: saldo-envias-usdt-telegram
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "3-59/10 * * * *"
   workflow_dispatch:
+
+concurrency:
+  group: saldo-envias-usdt-telegram
+  cancel-in-progress: true
 
 permissions:
   contents: write
