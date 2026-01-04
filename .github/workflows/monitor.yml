@@ -141,7 +141,7 @@ jobs:
               --data-urlencode "text=${MSG}" >/dev/null
 
             # Actualiza baseline SOLO cuando se envía
-            # echo "$CUR" > last_alert_value.txt
+            echo "$CUR" > last_alert_value.txt
           else
             echo "No alert: movement < threshold (acumula hasta llegar a $MOVE_THRESHOLD)"
           fi
