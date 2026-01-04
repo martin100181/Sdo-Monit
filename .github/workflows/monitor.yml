@@ -1,9 +1,10 @@
 name: saldo-envias-usdt-telegram
 
 on:
-  #schedule:
-  #  - cron: "3-59/10 * * * *"
   workflow_dispatch:
+  # Si querés dejar schedule (opcional), descomentá:
+  # schedule:
+  #   - cron: "3-59/10 * * * *"
 
 concurrency:
   group: saldo-envias-usdt-telegram
