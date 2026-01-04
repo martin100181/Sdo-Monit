@@ -127,17 +127,14 @@ jobs:
 
             if [ "$DIR" = "down" ]; then
               ICON="🟢"
-              VERB="Bajó"
             elif [ "$DIR" = "up" ]; then
               ICON="🔴"
-              VERB="Subió"
             else
               ICON="⚪️"
-              VERB="Sin cambio"
             fi
 
-            MSG="$(printf "%s ENVIAS_USDT bajo %s\n%s (%s)\nAnterior: %s\nActual:   %s\nΔ(signed): %s\nΔ(abs): %s" \
-            "$ICON" "$LIMIT" "$VERB" "$TS" "$BASE" "$CUR" "$DELTA" "$DIFF")"
+            MSG="$(printf "%s ENVIAS_USDT \n(%s)\nAnterior: %s\nActual: %s" \
+            "$ICON" "$TS" "$BASE" "$CUR" "$DELTA" "$DIFF")"
             
             curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
               -d "chat_id=${TELEGRAM_CHAT_ID}" \
