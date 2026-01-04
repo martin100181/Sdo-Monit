@@ -118,7 +118,10 @@ jobs:
           echo "SHOULD=$SHOULD"
 
           if [ "$SHOULD" = "yes" ]; then
-            MSG="🚨 ENVIAS_USDT bajo $LIMIT ($TS): $BASE → $CUR (Δ=$DIFF)"
+            # MSG="🚨 ENVIAS_USDT bajo $LIMIT ($TS): $BASE → $CUR (Δ=$DIFF)"
+            MSG="🚨 ($TS) ENVIAS_USDT: 
+            Anterior: $BASE
+            Actual: $CUR "
             curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
               -d "chat_id=${TELEGRAM_CHAT_ID}" \
               -d "text=${MSG}" >/dev/null
