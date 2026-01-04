@@ -134,14 +134,14 @@ jobs:
             fi
 
             MSG="$(printf "%s ENVIAS_USDT \n(%s)\nAnterior: %s\nActual: %s" \
-            "$ICON" "$TS" "$BASE" "$CUR" "$DELTA" "$DIFF")"
+            "$ICON" "$TS" "$BASE" "$CUR")"
             
             curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
               -d "chat_id=${TELEGRAM_CHAT_ID}" \
               --data-urlencode "text=${MSG}" >/dev/null
 
             # Actualiza baseline SOLO cuando se envía
-            echo "$CUR" > last_alert_value.txt
+            # echo "$CUR" > last_alert_value.txt
           else
             echo "No alert: movement < threshold (acumula hasta llegar a $MOVE_THRESHOLD)"
           fi
