@@ -17,8 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SALDO_URL: "https://saldo.com.ar/a/usdt/palpal/0/100"
-      LIMIT: "91.6"          # SOLO alerta si CUR < LIMIT
-      MOVE_THRESHOLD: "0.10" # y si el movimiento acumulado >= 0.10 vs último envío
+      LIMIT: "92"          # SOLO alerta si CUR < LIMIT
+      MOVE_THRESHOLD: "0.02" # y si el movimiento acumulado >= 0.10 vs último envío
 
     steps:
       - uses: actions/checkout@v4
