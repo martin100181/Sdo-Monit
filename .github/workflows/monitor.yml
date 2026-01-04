@@ -101,14 +101,12 @@ jobs:
           # Si nunca se envió nada y ya está bajo el límite -> enviamos 1er alerta y fijamos baseline
           if [ -z "$BASE" ]; then
             echo "$CUR" > last_alert_value.txt
-            MSG="🟡 ENVIAS_USDT bajo $LIMIT
-            ($TS)
-            Actual: $CUR
-            Baseline fijado"
+
+            MSG=$'🟡 ENVIAS_USDT bajo '"$LIMIT"$'\n('"$TS"$')\nActual: '"$CUR"$'\nBaseline fijado'
             
-            curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-              -d "chat_id=${TELEGRAM_CHAT_ID}" \
-              --data-urlencode "text=${MSG}" >/dev/null
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" >/dev/null
             exit 0
           fi
 
