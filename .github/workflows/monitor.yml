@@ -136,13 +136,7 @@ jobs:
               VERB="Sin cambio"
             fi
 
-            MSG="$ICON ENVIAS_USDT bajo $LIMIT
-$VERB ($TS)
-Anterior: $BASE
-Actual:   $CUR
-Δ(signed): $DELTA
-Δ(abs): $DIFF"
-
+            MSG=$"$ICON ENVIAS_USDT bajo $LIMIT\n$VERB ($TS)\nAnterior: $BASE\nActual: $CUR\nΔ(signed): $DELTA\nΔ(abs): $DIFF"
             curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
               -d "chat_id=${TELEGRAM_CHAT_ID}" \
               --data-urlencode "text=${MSG}" >/dev/null
