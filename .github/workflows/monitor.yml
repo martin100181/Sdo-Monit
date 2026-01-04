@@ -53,6 +53,20 @@ jobs:
 
           echo "value=$VAL" >> "$GITHUB_OUTPUT"
 
+      - name: Write Google credentials
+        run: |
+          echo "${{ secrets.GSERVICE_JSON_B64 }}" | base64 -d > gservice.json
+
+      - name: Append to Google Sheets
+        env:
+          GSHEET_ID: ${{ secrets.GSHEET_ID }}
+          VALUE_USDT: ${{ steps.monitor.outputs.value }}
+          GOOGLE_APPLICATION_CREDENTIALS: gservice.json
+          GSHEET_TAB: "Historial_usdt_ppal"
+        run: |
+          python append_to_sheets.py
+
+
       - name: Alert rules (Telegram) - only if below LIMIT and move >= threshold
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
