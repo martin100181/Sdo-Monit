@@ -98,6 +98,11 @@ jobs:
 
           echo "BASE=$BASE"
 
+          export CUR
+          RENTPOT_PCT="$(python -c "import os; v=float(os.environ['CUR']); r=((9000*0.954*0.985 - 1)/(v*90)) - 1; print(f'{r*100:.2f}%')")"
+          echo "RENTPOT_PCT=$RENTPOT_PCT"
+
+
           # Si nunca se envió nada y ya está bajo el límite -> enviamos 1er alerta y fijamos baseline
           if [ -z "$BASE" ]; then
             echo "$CUR" > last_alert_value.txt
@@ -133,8 +138,8 @@ jobs:
               ICON="⚪️"
             fi
 
-            MSG="$(printf "%s ENVIAS_USDT \n(%s)\nAnterior: %s\nActual: %s" \
-            "$ICON" "$TS" "$BASE" "$CUR")"
+            MSG="$(printf "%s ENVIAS_USDT \n(%s)\nAnterior: %s\nActual: %s\nRend.Pot.: %s" \
+            "$ICON" "$TS" "$BASE" "$CUR" "$RENTPOT")"
             
             curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
               -d "chat_id=${TELEGRAM_CHAT_ID}" \
