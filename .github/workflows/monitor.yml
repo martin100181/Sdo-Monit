@@ -139,7 +139,7 @@ jobs:
             fi
 
             MSG="$(printf "%s ENVIAS_USDT \n(%s)\nAnterior: %s\nActual: %s\nRend.Pot.: %s" \
-            "$ICON" "$TS" "$BASE" "$CUR" "$RENTPOT")"
+            "$ICON" "$TS" "$BASE" "$CUR" "$RENTPOT_PCT")"
             
             curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
               -d "chat_id=${TELEGRAM_CHAT_ID}" \
