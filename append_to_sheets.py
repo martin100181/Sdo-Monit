@@ -17,9 +17,9 @@ now = datetime.now(TZ)
 fecha = now.strftime("%Y-%m-%d")
 hora = now.strftime("%H:%M:%S")
 
-# Campos extra como TEXTO
-dia_mes = str(now.day)
-anio_mes = now.strftime("%Y-%m")
+# Campos extra
+dia_mes = now.day
+anio_mes = "'" + now.strftime("%Y-%m")   # ← FORZAR TEXTO SOLO AQUÍ
 
 # credenciales
 creds = Credentials.from_service_account_file(
@@ -52,7 +52,7 @@ body_graf = {
 service.spreadsheets().values().append(
     spreadsheetId=SHEET_ID,
     range=f"{TAB_GRAF}!A:E",
-    valueInputOption="RAW",
+    valueInputOption="USER_ENTERED",
     insertDataOption="INSERT_ROWS",
     body=body_graf,
 ).execute()
