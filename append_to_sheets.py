@@ -52,7 +52,7 @@ body_graf = {
 service.spreadsheets().values().append(
     spreadsheetId=SHEET_ID,
     range=f"{TAB_GRAF}!A:E",
-    valueInputOption="USER_ENTERED",
+    valueInputOption="RAW",
     insertDataOption="INSERT_ROWS",
     body=body_graf,
 ).execute()
