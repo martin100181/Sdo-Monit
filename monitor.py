@@ -7,42 +7,29 @@ URL = os.getenv("SALDO_URL", "https://saldo.com.ar/en-US/a/usdt/paypal/0/100")
 def read_envias_usdt(page) -> float:
     page.goto(URL, wait_until="networkidle", timeout=180000)
 
-    # Esperar que cargue cualquier input del cotizador
     page.wait_for_selector("input", timeout=60000)
 
     page.wait_for_timeout(2000)
 
-    usdt_value = page.evaluate("""
+    values = page.evaluate("""
         () => {
             const isVisible = el =>
                 !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
 
-            const clean = v =>
-                parseFloat(v.replace(",", "."));
+            const numericInputs = Array.from(document.querySelectorAll("input"))
+                .filter(isVisible)
+                .map(el => el.value)
+                .filter(v => /^[0-9]+([.,][0-9]+)?$/.test(v));
 
-            const inputs = Array.from(document.querySelectorAll("input"))
-                .filter(isVisible);
-
-            for (const input of inputs) {
-                const container = input.closest("div, section, article") || document.body;
-                const text = container.innerText.toLowerCase();
-
-                if (text.includes("usdt") || text.includes("tether")) {
-                    const val = input.value;
-                    if (/^[0-9]+([.,][0-9]+)?$/.test(val)) {
-                        return clean(val);
-                    }
-                }
-            }
-
-            return null;
+            return numericInputs;
         }
     """)
 
-    if not usdt_value:
-        raise RuntimeError("No se pudo encontrar el valor USDT")
+    if len(values) < 2:
+        throw new Error("No se encontraron suficientes inputs numéricos")
 
-    return usdt_value
+    usdt_value = values[1].replace(",", ".")
+    return float(usdt_value)
 
 
 def main():
