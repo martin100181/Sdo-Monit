@@ -1,20 +1,22 @@
 import requests
 
-API_URL = "https://api.saldo.com.ar/json/rates/paypal/paypal_usd,usdt"
+API_URL = "https://api.saldo.com.ar/json/rates/palpal/usdt"
 
 
 def read_envias_usdt():
+
+    usd_amount = 100
+
     r = requests.get(API_URL, timeout=30)
     r.raise_for_status()
 
     data = r.json()
 
-    paypal_bid = float(data["paypal_usd"]["bid"])
-    usdt_bid = float(data["usdt"]["bid"])
+    ask = float(data["usdt"]["ask"])
 
-    result = 100 * paypal_bid / usdt_bid
-    return result
+    usdt = usd_amount / ask
 
+    return round(usdt, 2)
 
 def main():
     try:
