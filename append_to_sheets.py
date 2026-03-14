@@ -17,8 +17,8 @@ now = datetime.now(TZ)
 fecha = now.strftime("%Y-%m-%d")
 hora = now.strftime("%H:%M:%S")
 
-# Nuevos campos
-dia_mes = now.day
+# Campos extra como TEXTO
+dia_mes = str(now.day)
 anio_mes = now.strftime("%Y-%m")
 
 # credenciales
@@ -29,7 +29,7 @@ creds = Credentials.from_service_account_file(
 
 service = build("sheets", "v4", credentials=creds)
 
-# ---------- TABLA HISTORIAL ----------
+# ---------- HISTORIAL ----------
 body_hist = {
     "values": [[fecha, hora, float(VALUE)]]
 }
@@ -44,7 +44,7 @@ service.spreadsheets().values().append(
 
 print(f"APPENDED {fecha} {hora} {VALUE} -> {TAB_HIST}")
 
-# ---------- TABLA DATOS GRAFICO ----------
+# ---------- DATOS GRAFICO ----------
 body_graf = {
     "values": [[fecha, hora, float(VALUE), dia_mes, anio_mes]]
 }
